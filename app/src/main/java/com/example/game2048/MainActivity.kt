@@ -4,7 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -47,19 +48,10 @@ class MainActivity : ComponentActivity() {
 fun GameScreen() {
     val game = remember { Game2048() }
     var gameState by remember { mutableStateOf(game.getGameState()) }
-    var canMove by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         game.newGame()
         gameState = game.getGameState()
-    }
-
-    // Handle debounce timer
-    LaunchedEffect(canMove) {
-        if (!canMove) {
-            kotlinx.coroutines.delay(150)
-            canMove = true
-        }
     }
 
     Column(
@@ -77,8 +69,7 @@ fun GameScreen() {
         GameBoard(
             board = gameState.board,
             onMove = { direction ->
-                if (canMove && !gameState.gameOver) {
-                    canMove = false
+                if (!gameState.gameOver) {
                     when (direction) {
                         Direction.UP -> game.moveUp()
                         Direction.DOWN -> game.moveDown()
@@ -165,41 +156,41 @@ fun GameBoard(
     board: Array<IntArray>,
     onMove: (Direction) -> Unit
 ) {
-    var moveTriggered by remember { mutableStateOf(false) }
-    
     Box(
         modifier = Modifier
             .size(300.dp)
             .background(Color(0xFFBBADA0))
             .padding(8.dp)
             .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = {
-                        moveTriggered = false
-                    },
-                    onDragEnd = {
-                        moveTriggered = false
-                    }
-                ) { change, dragAmount ->
-                    change.consume()
-                    val (dx, dy) = dragAmount
-                    val threshold = 100f
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    var currentPosition = down.position
                     
-                    // Only process once per gesture, when threshold is first exceeded
-                    if (!moveTriggered) {
-                        when {
-                            dx.absoluteValue > threshold && dx.absoluteValue > dy.absoluteValue -> {
-                                moveTriggered = true
-                                if (dx > 0) onMove(Direction.RIGHT)
-                                else onMove(Direction.LEFT)
+                    do {
+                        val event = awaitPointerEvent()
+                        currentPosition = event.changes.firstOrNull()?.position ?: currentPosition
+                        event.changes.forEach { it.consume() }
+                        
+                        // Check if gesture ended
+                        if (!event.changes.any { it.pressed }) {
+                            val dx = currentPosition.x - down.position.x
+                            val dy = currentPosition.y - down.position.y
+                            val threshold = 80f
+                            
+                            // Process gesture only on release
+                            when {
+                                dx.absoluteValue > threshold && dx.absoluteValue > dy.absoluteValue -> {
+                                    if (dx > 0) onMove(Direction.RIGHT)
+                                    else onMove(Direction.LEFT)
+                                }
+                                dy.absoluteValue > threshold && dy.absoluteValue > dx.absoluteValue -> {
+                                    if (dy > 0) onMove(Direction.DOWN)
+                                    else onMove(Direction.UP)
+                                }
                             }
-                            dy.absoluteValue > threshold && dy.absoluteValue > dx.absoluteValue -> {
-                                moveTriggered = true
-                                if (dy > 0) onMove(Direction.DOWN)
-                                else onMove(Direction.UP)
-                            }
+                            break
                         }
-                    }
+                    } while (event.changes.any { it.pressed })
                 }
             }
     ) {
