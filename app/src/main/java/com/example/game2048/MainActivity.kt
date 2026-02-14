@@ -123,10 +123,8 @@ fun SplashScreen(onNavigate: () -> Unit) {
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFBBADA0)),
-        contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter
     ) {
         Image(
             painter = androidx.compose.ui.res.painterResource(id = R.drawable.splash_bg),
@@ -135,31 +133,16 @@ fun SplashScreen(onNavigate: () -> Unit) {
             contentScale = ContentScale.Crop
         )
         
-        // Optional: Add a semi-transparent overlay if needed
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.2f))
-        )
-        
-        // Loading indicator
+        // Loading indicator at bottom
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Bottom,
+            verticalArrangement = Arrangement.Center,
             modifier = Modifier
-                .fillMaxSize()
                 .padding(32.dp)
         ) {
             androidx.compose.material3.CircularProgressIndicator(
                 color = Color.White,
                 modifier = Modifier.size(50.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Loading...",
-                fontSize = 16.sp,
-                color = Color.White,
-                fontWeight = FontWeight.SemiBold
             )
         }
     }
