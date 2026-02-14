@@ -15,6 +15,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,7 +39,7 @@ import kotlin.math.absoluteValue
 import kotlinx.coroutines.delay
 
 enum class AppScreen {
-    SPLASH, MENU, SETTINGS, GAME, LEADERBOARD
+    SPLASH, MENU, SETTINGS, GAME, LEADERBOARD, PROFILE, CHALLENGES, STATS
 }
 
 @Immutable
@@ -65,12 +66,16 @@ fun AppNavigation() {
     var currentScreen by remember { mutableStateOf(AppScreen.SPLASH) }
     var selectedBoardSize by remember { mutableStateOf(4) }
     var selectedTargetValue by remember { mutableStateOf(2048) }
+    var selectedChallenge by remember { mutableStateOf<Challenge?>(null) }
 
     when (currentScreen) {
         AppScreen.SPLASH -> SplashScreen(onNavigate = { currentScreen = AppScreen.MENU })
         AppScreen.MENU -> MenuScreen(
             onPlayGame = { currentScreen = AppScreen.SETTINGS },
-            onViewLeaderboard = { currentScreen = AppScreen.LEADERBOARD }
+            onViewLeaderboard = { currentScreen = AppScreen.LEADERBOARD },
+            onViewProfile = { currentScreen = AppScreen.PROFILE },
+            onViewChallenges = { currentScreen = AppScreen.CHALLENGES },
+            onViewStats = { currentScreen = AppScreen.STATS }
         )
         AppScreen.SETTINGS -> SettingsScreen(
             selectedSize = selectedBoardSize,
@@ -86,6 +91,21 @@ fun AppNavigation() {
             onBack = { currentScreen = AppScreen.MENU }
         )
         AppScreen.LEADERBOARD -> LeaderboardScreen(
+            onBack = { currentScreen = AppScreen.MENU }
+        )
+        AppScreen.PROFILE -> ProfileScreen(
+            onBack = { currentScreen = AppScreen.MENU }
+        )
+        AppScreen.CHALLENGES -> ChallengesScreen(
+            onStartChallenge = { challenge ->
+                selectedChallenge = challenge
+                selectedBoardSize = challenge.boardSize
+                selectedTargetValue = challenge.targetValue
+                currentScreen = AppScreen.GAME
+            },
+            onBack = { currentScreen = AppScreen.MENU }
+        )
+        AppScreen.STATS -> StatsScreen(
             onBack = { currentScreen = AppScreen.MENU }
         )
     }
@@ -138,7 +158,13 @@ fun SplashScreen(onNavigate: () -> Unit) {
 }
 
 @Composable
-fun MenuScreen(onPlayGame: () -> Unit, onViewLeaderboard: () -> Unit) {
+fun MenuScreen(
+    onPlayGame: () -> Unit,
+    onViewLeaderboard: () -> Unit,
+    onViewProfile: () -> Unit,
+    onViewChallenges: () -> Unit,
+    onViewStats: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -152,58 +178,107 @@ fun MenuScreen(onPlayGame: () -> Unit, onViewLeaderboard: () -> Unit) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                .padding(16.dp)
         ) {
             AsyncImage(
                 model = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Merge_square_numbers.svg/1024px-Merge_square_numbers.svg.png",
-                contentDescription = "2048 Logo",
+                contentDescription = "NumMerge Logo",
                 modifier = Modifier
-                    .size(180.dp)
-                    .padding(16.dp),
+                    .size(140.dp)
+                    .padding(8.dp),
                 contentScale = ContentScale.Fit
             )
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "2048",
-                fontSize = 64.sp,
+                text = "NumMerge",
+                fontSize = 56.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF776E65)
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Merge tiles to reach your goal!",
-                fontSize = 18.sp,
+                text = "Merge. Combine. Conquer.",
+                fontSize = 16.sp,
                 color = Color(0xFF776E65),
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(16.dp),
                 fontWeight = FontWeight.SemiBold
             )
-            Spacer(modifier = Modifier.height(56.dp))
+            Spacer(modifier = Modifier.height(40.dp))
+            
+            // Main buttons
             Button(
                 onClick = onPlayGame,
                 modifier = Modifier
-                    .height(56.dp)
-                    .width(200.dp),
+                    .height(50.dp)
+                    .fillMaxWidth(0.85f),
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFEC483F)
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("▶ Play Game", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("▶ Play Now", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Button(
+                onClick = onViewChallenges,
+                modifier = Modifier
+                    .height(50.dp)
+                    .fillMaxWidth(0.85f),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFEDC22E)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("⚡ Challenges", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            
             Button(
                 onClick = onViewLeaderboard,
                 modifier = Modifier
-                    .height(56.dp)
-                    .width(200.dp),
+                    .height(50.dp)
+                    .fillMaxWidth(0.85f),
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFF2B179)
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("🏆 Leaderboard", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("🏆 Leaderboard", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Button(
+                onClick = onViewProfile,
+                modifier = Modifier
+                    .height(50.dp)
+                    .fillMaxWidth(0.85f),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF776E65)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("👤 Profile", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Button(
+                onClick = onViewStats,
+                modifier = Modifier
+                    .height(50.dp)
+                    .fillMaxWidth(0.85f),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF9F8A78)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("📊 Statistics", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -620,88 +695,84 @@ fun GameScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Color(0xFFBBADA0), Color(0xFFA9998C))
-                )
-            ),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
-    ) {
-        // Top bar with back button, score, and time
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Button(
-                onClick = {
-                    if (gameState.won || gameState.gameOver) {
-                        onBack()
-                    }
-                },
-                modifier = Modifier
-                    .height(40.dp)
-                    .width(90.dp),
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFCDC1B4)
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color(0xFFBBADA0), Color(0xFFA9998C))
+                    )
                 ),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text("← Back", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-            }
-            
-            // Score Card
-            Box(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            // Top status bar
+            Row(
                 modifier = Modifier
-                    .background(Color(0xFFEC483F), shape = RoundedCornerShape(8.dp))
+                    .fillMaxWidth()
                     .padding(12.dp),
-                contentAlignment = Alignment.Center
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "Score",
-                        fontSize = 11.sp,
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = gameState.score.toString(),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFEDC22E)
-                    )
+                Button(
+                    onClick = onBack,
+                    modifier = Modifier
+                        .height(40.dp)
+                        .width(90.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFCDC1B4)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("← Back", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                }
+                
+                // Score Card
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFFEC483F), shape = RoundedCornerShape(8.dp))
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Score",
+                            fontSize = 11.sp,
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = gameState.score.toString(),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFEDC22E)
+                        )
+                    }
+                }
+                
+                // Time Card
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFFF2B179), shape = RoundedCornerShape(8.dp))
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Time",
+                            fontSize = 11.sp,
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "${elapsedTime / 1000}s",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF776E65)
+                        )
+                    }
                 }
             }
-            
-            // Time Card
-            Box(
-                modifier = Modifier
-                    .background(Color(0xFFF2B179), shape = RoundedCornerShape(8.dp))
-                    .padding(12.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "Time",
-                        fontSize = 11.sp,
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "${elapsedTime / 1000}s",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF776E65)
-                    )
-                }
-            }
-        }
 
         // Game Board - Fullscreen
         Box(
@@ -783,7 +854,7 @@ fun GameScreen(
                         ),
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text("🏆 Save to Leaderboard", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                        Text("🏆 Save to NumMerge", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                     }
                 }
             } else {
@@ -806,6 +877,372 @@ fun GameScreen(
                     Text("🔄 New Game", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ProfileScreen(onBack: () -> Unit) {
+    var playerName by remember { mutableStateOf(StatsManager.getStats().playerName) }
+    var isEditing by remember { mutableStateOf(false) }
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color(0xFFBBADA0), Color(0xFF9F8A78))
+                )
+            )
+            .verticalScroll(androidx.compose.foundation.rememberScrollState())
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(
+                onClick = onBack,
+                modifier = Modifier
+                    .height(40.dp)
+                    .width(100.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFCDC1B4)
+                )
+            ) {
+                Text("← Back", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+            }
+            
+            Text(
+                text = "👤 My Profile",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF776E65)
+            )
+            
+            Spacer(modifier = Modifier.width(100.dp))
+        }
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        // Player name section
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFEC483F), shape = RoundedCornerShape(12.dp))
+                .padding(20.dp)
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (isEditing) {
+                    androidx.compose.material3.TextField(
+                        value = playerName,
+                        onValueChange = { playerName = it },
+                        label = { Text("Enter your name") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.White, shape = RoundedCornerShape(8.dp)),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            StatsManager.setPlayerName(playerName)
+                            isEditing = false
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .height(40.dp),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFEDC22E)
+                        )
+                    ) {
+                        Text("Save Name", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    }
+                } else {
+                    Text(
+                        text = "Welcome!",
+                        fontSize = 16.sp,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = playerName.ifEmpty { "Anonymous Player" },
+                        fontSize = 28.sp,
+                        color = Color(0xFFEDC22E),
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = { isEditing = true },
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .height(40.dp),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFF2B179)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("✏️ Edit Name", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Quick stats
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(Color(0xFFF2B179), shape = RoundedCornerShape(12.dp))
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Games", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        StatsManager.getStats().totalGames.toString(),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+            
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(Color(0xFFEDC22E), shape = RoundedCornerShape(12.dp))
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Wins", fontSize = 12.sp, color = Color.Black, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        StatsManager.getStats().totalWins.toString(),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+fun ChallengesScreen(onStartChallenge: (Challenge) -> Unit, onBack: () -> Unit) {
+    val challenges = ChallengeManager.getChallenges()
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color(0xFFBBADA0), Color(0xFF9F8A78))
+                )
+            )
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(
+                onClick = onBack,
+                modifier = Modifier
+                    .height(40.dp)
+                    .width(100.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFCDC1B4)
+                )
+            ) {
+                Text("← Back", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+            }
+            
+            Text(
+                text = "⚡ Challenges",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF776E65)
+            )
+            
+            Spacer(modifier = Modifier.width(100.dp))
+        }
+        
+        Spacer(modifier = Modifier.height(20.dp))
+        
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(challenges.size) { index ->
+                val challenge = challenges[index]
+                Button(
+                    onClick = { onStartChallenge(challenge) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .padding(8.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFF2B179)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "${challenge.icon} ${challenge.name}",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = challenge.description,
+                                fontSize = 13.sp,
+                                color = Color.White.copy(alpha = 0.8f)
+                            )
+                        }
+                        Text(
+                            text = "→",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StatsScreen(onBack: () -> Unit) {
+    val stats = StatsManager.getStats()
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color(0xFFBBADA0), Color(0xFF9F8A78))
+                )
+            )
+            .verticalScroll(androidx.compose.foundation.rememberScrollState())
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(
+                onClick = onBack,
+                modifier = Modifier
+                    .height(40.dp)
+                    .width(100.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFCDC1B4)
+                )
+            ) {
+                Text("← Back", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+            }
+            
+            Text(
+                text = "📊 Statistics",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF776E65)
+            )
+            
+            Spacer(modifier = Modifier.width(100.dp))
+        }
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        // Main stats grid
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Row 1
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StatBox(icon = "🎮", label = "Total Games", value = stats.totalGames.toString(), Color(0xFFEC483F), 1f)
+                StatBox(icon = "🏆", label = "Total Wins", value = stats.totalWins.toString(), Color(0xFFEDC22E), 1f)
+            }
+            
+            // Row 2
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StatBox(icon = "⭐", label = "Best Score", value = stats.bestScore.toString(), Color(0xFFF2B179), 1f)
+                StatBox(icon = "⚡", label = "Best Time", value = "${stats.bestTime / 1000}s", Color(0xFF776E65), 1f)
+            }
+            
+            // Win rate
+            val winRate = if (stats.totalGames > 0) {
+                ((stats.totalWins.toFloat() / stats.totalGames.toFloat()) * 100).toInt()
+            } else {
+                0
+            }
+            
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF9F8A78), shape = RoundedCornerShape(12.dp))
+                    .padding(20.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Win Rate", fontSize = 16.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("$winRate%", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEDC22E))
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+fun StatBox(icon: String, label: String, value: String, bgColor: Color, weight: Float) {
+    Box(
+        modifier = Modifier
+            .weight(weight)
+            .background(bgColor, shape = RoundedCornerShape(12.dp))
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(icon, fontSize = 24.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(label, fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
     }
 }

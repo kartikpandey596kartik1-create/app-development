@@ -262,6 +262,29 @@ class Game2048(val boardSize: Int = 4, val targetValue: Int = 2048) {
     }
 }
 
+@Immutable
+data class PlayerStats(
+    val playerName: String = "Player",
+    val totalGames: Int = 0,
+    val totalWins: Int = 0,
+    val bestScore: Int = 0,
+    val bestTime: Long = Long.MAX_VALUE,
+    val totalAchievements: Int = 0,
+    val gamesPlayedToday: Int = 0,
+    val totalTilesCreated: Int = 0
+)
+
+@Immutable
+data class Challenge(
+    val id: String,
+    val name: String,
+    val description: String,
+    val targetValue: Int,
+    val boardSize: Int,
+    val timeLimit: Long = 0L, // 0 = no time limit
+    val icon: String = "🎯"
+)
+
 object LeaderboardManager {
     private val leaderboards = mutableMapOf<Int, MutableList<LeaderboardEntry>>()
 
@@ -285,4 +308,105 @@ object LeaderboardManager {
     fun getAllLeaderboards(): Map<Int, List<LeaderboardEntry>> {
         return leaderboards.mapValues { it.value.sortedBy { entry -> entry.time } }
     }
+}
+
+object StatsManager {
+    private var playerStats = PlayerStats()
+
+    fun getStats(): PlayerStats = playerStats
+
+    fun updateStats(
+        playerName: String? = null,
+        won: Boolean? = null,
+        score: Int? = null,
+        time: Long? = null
+    ) {
+        var newStats = playerStats
+        
+        if (playerName != null && playerName.isNotEmpty()) {
+            newStats = newStats.copy(playerName = playerName)
+        }
+        
+        if (score != null) {
+            newStats = newStats.copy(
+                bestScore = maxOf(newStats.bestScore, score),
+                totalGames = newStats.totalGames + 1,
+                gamesPlayedToday = newStats.gamesPlayedToday + 1
+            )
+        }
+        
+        if (won == true) {
+            newStats = newStats.copy(totalWins = newStats.totalWins + 1)
+        }
+        
+        if (time != null && time < newStats.bestTime) {
+            newStats = newStats.copy(bestTime = time)
+        }
+        
+        playerStats = newStats
+    }
+
+    fun setPlayerName(name: String) {
+        playerStats = playerStats.copy(playerName = name)
+    }
+
+    fun reset() {
+        playerStats = PlayerStats()
+    }
+}
+
+object ChallengeManager {
+    private val challenges = listOf(
+        Challenge(
+            id = "beginner_512",
+            name = "Beginner",
+            description = "Reach 512 on 4×4 board",
+            targetValue = 512,
+            boardSize = 4,
+            icon = "🌱"
+        ),
+        Challenge(
+            id = "junior_1024",
+            name = "Junior",
+            description = "Reach 1024 on 4×4 board",
+            targetValue = 1024,
+            boardSize = 4,
+            icon = "🌿"
+        ),
+        Challenge(
+            id = "intermediate_2048",
+            name = "Intermediate",
+            description = "Reach 2048 on 4×4 board",
+            targetValue = 2048,
+            boardSize = 4,
+            icon = "⭐"
+        ),
+        Challenge(
+            id = "expert_4096",
+            name = "Expert",
+            description = "Reach 4096 on 5×5 board",
+            targetValue = 4096,
+            boardSize = 5,
+            icon = "🔥"
+        ),
+        Challenge(
+            id = "master_8192",
+            name = "Master",
+            description = "Reach 8192 on 6×6 board",
+            targetValue = 8192,
+            boardSize = 6,
+            icon = "👑"
+        ),
+        Challenge(
+            id = "speedrun_fast",
+            name = "Speed Run",
+            description = "Reach 2048 in under 60 seconds",
+            targetValue = 2048,
+            boardSize = 4,
+            timeLimit = 60000L,
+            icon = "⚡"
+        )
+    )
+
+    fun getChallenges(): List<Challenge> = challenges
 }
