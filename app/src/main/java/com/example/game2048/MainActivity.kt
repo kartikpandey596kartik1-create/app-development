@@ -16,14 +16,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.game2048.ui.theme.Game2048Theme
 import kotlin.math.absoluteValue
 import kotlinx.coroutines.delay
+
+enum class AppScreen {
+    SPLASH, MENU, GAME
+}
 
 @Immutable
 data class TileColors(val background: Color, val text: Color)
@@ -37,7 +43,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    GameScreen()
+                    AppNavigation()
                 }
             }
         }
@@ -45,71 +51,216 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun GameScreen() {
+fun AppNavigation() {
+    var currentScreen by remember { mutableStateOf(AppScreen.SPLASH) }
+
+    when (currentScreen) {
+        AppScreen.SPLASH -> SplashScreen(onNavigate = { currentScreen = AppScreen.MENU })
+        AppScreen.MENU -> MenuScreen(onNavigate = { currentScreen = AppScreen.GAME })
+        AppScreen.GAME -> GameScreen(onBack = { currentScreen = AppScreen.MENU })
+    }
+}
+
+@Composable
+fun SplashScreen(onNavigate: () -> Unit) {
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        delay(2000)
+        isLoading = false
+        onNavigate()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFBBADA0)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            AsyncImage(
+                model = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Merge_square_numbers.svg/1024px-Merge_square_numbers.svg.png",
+                contentDescription = "2048 Logo",
+                modifier = Modifier
+                    .size(200.dp)
+                    .padding(16.dp),
+                contentScale = ContentScale.Fit
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "2048",
+                fontSize = 48.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF776E65)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Loading...",
+                fontSize = 18.sp,
+                color = Color(0xFF9F8A78)
+            )
+        }
+    }
+}
+
+@Composable
+fun MenuScreen(onNavigate: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFBBADA0)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            AsyncImage(
+                model = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Merge_square_numbers.svg/1024px-Merge_square_numbers.svg.png",
+                contentDescription = "2048 Logo",
+                modifier = Modifier
+                    .size(180.dp)
+                    .padding(16.dp),
+                contentScale = ContentScale.Fit
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "2048",
+                fontSize = 56.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF776E65)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Merge tiles to reach 2048!",
+                fontSize = 16.sp,
+                color = Color(0xFF9F8A78),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(16.dp)
+            )
+            Spacer(modifier = Modifier.height(48.dp))
+            Button(
+                onClick = onNavigate,
+                modifier = Modifier
+                    .height(60.dp)
+                    .width(150.dp)
+            ) {
+                Text("Play Game", fontSize = 20.sp)
+            }
+        }
+    }
+}
+
+@Composable
+fun GameScreen(onBack: () -> Unit = {}) {
     val game = remember { Game2048() }
     var gameState by remember { mutableStateOf(game.getGameState()) }
+    var canMove by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         game.newGame()
         gameState = game.getGameState()
     }
 
+    // Handle debounce timer
+    LaunchedEffect(canMove) {
+        if (!canMove) {
+            delay(150)
+            canMove = true
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFBBADA0))
-            .padding(16.dp),
+            .background(Color(0xFFBBADA0)),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        // Header
-        GameHeader(score = gameState.score)
-
-        // Game Board
-        GameBoard(
-            board = gameState.board,
-            onMove = { direction ->
-                if (!gameState.gameOver) {
-                    when (direction) {
-                        Direction.UP -> game.moveUp()
-                        Direction.DOWN -> game.moveDown()
-                        Direction.LEFT -> game.moveLeft()
-                        Direction.RIGHT -> game.moveRight()
-                    }
-                    gameState = game.getGameState()
-                }
-            }
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Game Status
-        GameStatus(won = gameState.won && !gameState.gameOver, gameOver = gameState.gameOver)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // New Game Button
-        Button(
-            onClick = {
-                game.newGame()
-                gameState = game.getGameState()
-            },
+        // Top bar with back button and score
+        Row(
             modifier = Modifier
-                .height(50.dp)
-                .width(120.dp)
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("New Game", fontSize = 16.sp)
+            Button(
+                onClick = onBack,
+                modifier = Modifier.height(40.dp)
+            ) {
+                Text("← Back", fontSize = 14.sp)
+            }
+            
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "Score",
+                    fontSize = 12.sp,
+                    color = Color(0xFFBDAC9F)
+                )
+                Text(
+                    text = gameState.score.toString(),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier
+                        .background(Color(0xFFBBADA0))
+                        .padding(8.dp)
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // Game Board - Fullscreen
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.85f)
+                .padding(8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            GameBoard(
+                board = gameState.board,
+                onMove = { direction ->
+                    if (canMove && !gameState.gameOver) {
+                        canMove = false
+                        when (direction) {
+                            Direction.UP -> game.moveUp()
+                            Direction.DOWN -> game.moveDown()
+                            Direction.LEFT -> game.moveLeft()
+                            Direction.RIGHT -> game.moveRight()
+                        }
+                        gameState = game.getGameState()
+                    }
+                }
+            )
+        }
 
-        // Instructions
-        Text(
-            text = "Swipe to move tiles\nCombine tiles to reach 2048!",
-            fontSize = 12.sp,
-            color = Color(0xFF776E65),
-            textAlign = TextAlign.Center
-        )
+        // Bottom bar with controls
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            GameStatus(won = gameState.won && !gameState.gameOver, gameOver = gameState.gameOver)
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = {
+                    game.newGame()
+                    gameState = game.getGameState()
+                },
+                modifier = Modifier.height(45.dp)
+            ) {
+                Text("New Game", fontSize = 14.sp)
+            }
+        }
     }
 }
 
@@ -158,9 +309,10 @@ fun GameBoard(
 ) {
     Box(
         modifier = Modifier
-            .size(300.dp)
+            .fillMaxSize()
             .background(Color(0xFFBBADA0))
             .padding(8.dp)
+            .aspectRatio(1f)
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown()
@@ -211,8 +363,7 @@ fun GameBoard(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .padding(4.dp),
-                            key = "$i-$j"
+                                .padding(4.dp)
                         )
                     }
                 }
@@ -229,22 +380,28 @@ fun GameTile(
 ) {
     val colors = remember(value) { getTileColors(value) }
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .background(colors.background)
             .aspectRatio(1f),
         contentAlignment = Alignment.Center
     ) {
         if (value > 0) {
+            // Scale font size based on tile size
+            val baseFontSize = maxWidth / 4
+            val fontSize = when {
+                value >= 1000 -> baseFontSize * 0.7f
+                value >= 100 -> baseFontSize * 0.8f
+                else -> baseFontSize * 0.9f
+            }
+            
             Text(
                 text = value.toString(),
-                fontSize = when {
-                    value >= 1000 -> 32.sp
-                    else -> 40.sp
-                },
+                fontSize = fontSize.value.sp,
                 fontWeight = FontWeight.Bold,
                 color = colors.text,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 1
             )
         }
     }
