@@ -28,7 +28,7 @@ import kotlin.math.absoluteValue
 import kotlinx.coroutines.delay
 
 enum class AppScreen {
-    SPLASH, MENU, GAME
+    SPLASH, MENU, SETTINGS, GAME, LEADERBOARD
 }
 
 @Immutable
@@ -53,11 +53,31 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     var currentScreen by remember { mutableStateOf(AppScreen.SPLASH) }
+    var selectedBoardSize by remember { mutableStateOf(4) }
+    var selectedTargetValue by remember { mutableStateOf(2048) }
 
     when (currentScreen) {
         AppScreen.SPLASH -> SplashScreen(onNavigate = { currentScreen = AppScreen.MENU })
-        AppScreen.MENU -> MenuScreen(onNavigate = { currentScreen = AppScreen.GAME })
-        AppScreen.GAME -> GameScreen(onBack = { currentScreen = AppScreen.MENU })
+        AppScreen.MENU -> MenuScreen(
+            onPlayGame = { currentScreen = AppScreen.SETTINGS },
+            onViewLeaderboard = { currentScreen = AppScreen.LEADERBOARD }
+        )
+        AppScreen.SETTINGS -> SettingsScreen(
+            selectedSize = selectedBoardSize,
+            selectedTarget = selectedTargetValue,
+            onSizeSelected = { selectedBoardSize = it },
+            onTargetSelected = { selectedTargetValue = it },
+            onStartGame = { currentScreen = AppScreen.GAME },
+            onBack = { currentScreen = AppScreen.MENU }
+        )
+        AppScreen.GAME -> GameScreen(
+            boardSize = selectedBoardSize,
+            targetValue = selectedTargetValue,
+            onBack = { currentScreen = AppScreen.MENU }
+        )
+        AppScreen.LEADERBOARD -> LeaderboardScreen(
+            onBack = { currentScreen = AppScreen.MENU }
+        )
     }
 }
 
@@ -108,7 +128,7 @@ fun SplashScreen(onNavigate: () -> Unit) {
 }
 
 @Composable
-fun MenuScreen(onNavigate: () -> Unit) {
+fun MenuScreen(onPlayGame: () -> Unit, onViewLeaderboard: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -137,7 +157,7 @@ fun MenuScreen(onNavigate: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Merge tiles to reach 2048!",
+                text = "Merge tiles to reach your goal!",
                 fontSize = 16.sp,
                 color = Color(0xFF9F8A78),
                 textAlign = TextAlign.Center,
@@ -145,26 +165,274 @@ fun MenuScreen(onNavigate: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(48.dp))
             Button(
-                onClick = onNavigate,
+                onClick = onPlayGame,
                 modifier = Modifier
                     .height(60.dp)
                     .width(150.dp)
             ) {
                 Text("Play Game", fontSize = 20.sp)
             }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onViewLeaderboard,
+                modifier = Modifier
+                    .height(60.dp)
+                    .width(150.dp)
+            ) {
+                Text("Leaderboard", fontSize = 20.sp)
+            }
         }
     }
 }
 
 @Composable
-fun GameScreen(onBack: () -> Unit = {}) {
-    val game = remember { Game2048() }
+fun SettingsScreen(
+    selectedSize: Int,
+    selectedTarget: Int,
+    onSizeSelected: (Int) -> Unit,
+    onTargetSelected: (Int) -> Unit,
+    onStartGame: () -> Unit,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFBBADA0))
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Button(onClick = onBack, modifier = Modifier.height(40.dp)) {
+            Text("← Back", fontSize = 14.sp)
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        Text(
+            text = "Game Settings",
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF776E65)
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "Board Size: $selectedSize × $selectedSize",
+            fontSize = 18.sp,
+            color = Color(0xFF776E65),
+            fontWeight = FontWeight.Bold
+        )
+        
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            for (size in 4..10) {
+                Button(
+                    onClick = { onSizeSelected(size) },
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .height(40.dp)
+                        .width(40.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = if (selectedSize == size) Color(0xFFEC483F) else Color(0xFFCDC1B4)
+                    )
+                ) {
+                    Text(size.toString(), fontSize = 12.sp)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "Target Value: $selectedTarget",
+            fontSize = 18.sp,
+            color = Color(0xFF776E65),
+            fontWeight = FontWeight.Bold
+        )
+        
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            for (target in listOf(2048, 4096, 8192, 16384)) {
+                Button(
+                    onClick = { onTargetSelected(target) },
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .fillMaxWidth(0.7f)
+                        .height(50.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = if (selectedTarget == target) Color(0xFFEC483F) else Color(0xFFCDC1B4)
+                    )
+                ) {
+                    Text(target.toString(), fontSize = 16.sp)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        Button(
+            onClick = onStartGame,
+            modifier = Modifier
+                .height(60.dp)
+                .width(200.dp)
+        ) {
+            Text("Start Game", fontSize = 20.sp)
+        }
+    }
+}
+
+@Composable
+fun LeaderboardScreen(onBack: () -> Unit) {
+    var selectedSize by remember { mutableStateOf(4) }
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFBBADA0))
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(
+                onClick = onBack,
+                modifier = Modifier.height(40.dp)
+            ) {
+                Text("← Back", fontSize = 14.sp)
+            }
+            
+            Text(
+                text = "Leaderboard",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF776E65)
+            )
+            
+            Spacer(modifier = Modifier.width(80.dp))
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Board size selector
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            for (size in 4..10) {
+                Button(
+                    onClick = { selectedSize = size },
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .height(36.dp)
+                        .width(36.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = if (selectedSize == size) Color(0xFFEC483F) else Color(0xFFCDC1B4)
+                    )
+                ) {
+                    Text(size.toString(), fontSize = 10.sp)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Leaderboard entries
+        val entries = LeaderboardManager.getLeaderboard(selectedSize)
+        
+        if (entries.isEmpty()) {
+            Text(
+                text = "No scores yet for $selectedSize×$selectedSize",
+                fontSize = 16.sp,
+                color = Color(0xFF776E65),
+                modifier = Modifier.padding(16.dp)
+            )
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(entries.size) { index ->
+                    val entry = entries[index]
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                            .background(Color(0xFFCDC1B4), shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "#${index + 1}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF776E65)
+                        )
+                        
+                        Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                            Text(
+                                text = entry.playerName,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF776E65)
+                            )
+                            Text(
+                                text = "Score: ${entry.score} | Target: ${entry.targetValue}",
+                                fontSize = 12.sp,
+                                color = Color(0xFF9F8A78)
+                            )
+                        }
+                        
+                        Text(
+                            text = "${entry.time / 1000}s",
+                            fontSize = 12.sp,
+                            color = Color(0xFF776E65),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun GameScreen(
+    boardSize: Int = 4,
+    targetValue: Int = 2048,
+    onBack: () -> Unit = {}
+) {
+    val game = remember { Game2048(boardSize, targetValue) }
     var gameState by remember { mutableStateOf(game.getGameState()) }
     var canMove by remember { mutableStateOf(true) }
+    var gameStartTime by remember { mutableStateOf(System.currentTimeMillis()) }
+    var elapsedTime by remember { mutableStateOf(0L) }
+
+    // Update elapsed time
+    LaunchedEffect(gameState.gameOver || gameState.won) {
+        while (!gameState.gameOver && !gameState.won) {
+            delay(1000)
+            elapsedTime = System.currentTimeMillis() - gameStartTime
+        }
+    }
 
     LaunchedEffect(Unit) {
         game.newGame()
         gameState = game.getGameState()
+        gameStartTime = System.currentTimeMillis()
     }
 
     // Handle debounce timer
@@ -191,7 +459,11 @@ fun GameScreen(onBack: () -> Unit = {}) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Button(
-                onClick = onBack,
+                onClick = {
+                    if (gameState.won || gameState.gameOver) {
+                        onBack()
+                    }
+                },
                 modifier = Modifier.height(40.dp)
             ) {
                 Text("← Back", fontSize = 14.sp)
@@ -213,6 +485,23 @@ fun GameScreen(onBack: () -> Unit = {}) {
                         .padding(8.dp)
                 )
             }
+            
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "Time",
+                    fontSize = 12.sp,
+                    color = Color(0xFFBDAC9F)
+                )
+                Text(
+                    text = "${elapsedTime / 1000}s",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier
+                        .background(Color(0xFFBBADA0))
+                        .padding(8.dp)
+                )
+            }
         }
 
         // Game Board - Fullscreen
@@ -225,8 +514,9 @@ fun GameScreen(onBack: () -> Unit = {}) {
         ) {
             GameBoard(
                 board = gameState.board,
+                boardSize = boardSize,
                 onMove = { direction ->
-                    if (canMove && !gameState.gameOver) {
+                    if (canMove && !gameState.gameOver && !gameState.won) {
                         canMove = false
                         when (direction) {
                             Direction.UP -> game.moveUp()
@@ -249,16 +539,55 @@ fun GameScreen(onBack: () -> Unit = {}) {
         ) {
             GameStatus(won = gameState.won && !gameState.gameOver, gameOver = gameState.gameOver)
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = {
-                    game.newGame()
-                    gameState = game.getGameState()
-                },
-                modifier = Modifier.height(45.dp)
-            ) {
-                Text("New Game", fontSize = 14.sp)
+            if (gameState.won || gameState.gameOver) {
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Button(
+                    onClick = {
+                        elapsedTime = 0L
+                        gameStartTime = System.currentTimeMillis()
+                        game.newGame()
+                        gameState = game.getGameState()
+                    },
+                    modifier = Modifier.height(45.dp)
+                ) {
+                    Text("New Game", fontSize = 14.sp)
+                }
+                
+                if (gameState.won && !gameState.gameOver) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            // Add to leaderboard
+                            LeaderboardManager.addEntry(
+                                LeaderboardEntry(
+                                    playerName = "Player",
+                                    score = gameState.score,
+                                    time = elapsedTime,
+                                    boardSize = boardSize,
+                                    targetValue = targetValue
+                                )
+                            )
+                            onBack()
+                        },
+                        modifier = Modifier.height(45.dp)
+                    ) {
+                        Text("Save to Leaderboard", fontSize = 14.sp)
+                    }
+                }
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = {
+                        elapsedTime = 0L
+                        gameStartTime = System.currentTimeMillis()
+                        game.newGame()
+                        gameState = game.getGameState()
+                    },
+                    modifier = Modifier.height(45.dp)
+                ) {
+                    Text("New Game", fontSize = 14.sp)
+                }
             }
         }
     }
@@ -269,42 +598,9 @@ enum class Direction {
 }
 
 @Composable
-fun GameHeader(score: Int) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "2048",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF776E65)
-        )
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = "Score",
-                fontSize = 12.sp,
-                color = Color(0xFFBDAC9F)
-            )
-            Text(
-                text = score.toString(),
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier
-                    .background(Color(0xFFBBADA0))
-                    .padding(8.dp)
-            )
-        }
-    }
-}
-
-@Composable
 fun GameBoard(
     board: Array<IntArray>,
+    boardSize: Int = 4,
     onMove: (Direction) -> Unit
 ) {
     Box(
