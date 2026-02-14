@@ -1,64 +1,112 @@
-# App Development
+# 2048 Game - Android Application
 
-An Android application development project.
+A fully functional 2048 game implementation for Android using Kotlin and Jetpack Compose.
 
-## Description
+## Features
 
-This repository contains the source code for an Android application.
+- **Full 2048 Game Logic**: Complete implementation of the 2048 game mechanics
+- **Smooth UI**: Built with Jetpack Compose for a modern Material Design interface
+- **Gesture Controls**: Swipe gestures to move tiles in all directions (up, down, left, right)
+- **Score Tracking**: Real-time score updates as you play
+- **Game Status**: Displays when you win or when the game is over
+- **Color-coded Tiles**: Each number has its own color scheme for better visuals
+- **New Game**: Reset the game anytime with the "New Game" button
 
-## Getting Started
+## Game Rules
 
-### Prerequisites
-
-- Android Studio (latest version recommended)
-- JDK 8 or higher
-- Android SDK
-
-### Installation
-
-1. Clone this repository
-   ```bash
-   git clone https://github.com/kartikpandey596kartik1-create/app-development.git
-   ```
-
-2. Open the project in Android Studio
-
-3. Sync Gradle files
-
-4. Run the application on an emulator or physical device
+1. Tiles with the same number merge when they touch
+2. Move tiles by swiping up, down, left, or right
+3. Each move adds a new random tile (2 or 4)
+4. Reach 2048 to win (you can continue playing)
+5. Game ends when there are no valid moves left
 
 ## Project Structure
 
 ```
-app-development/
-├── app/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/
-│   │   │   ├── res/
-│   │   │   └── AndroidManifest.xml
-│   │   └── test/
-│   └── build.gradle
-├── gradle/
-├── build.gradle
-└── settings.gradle
+app/
+├── src/
+│   ├── main/
+│   │   ├── java/com/example/game2048/
+│   │   │   ├── MainActivity.kt          # Main UI and game screen
+│   │   │   ├── GameLogic.kt             # Core game logic
+│   │   │   └── ui/theme/
+│   │   │       ├── Theme.kt             # Material Design theme
+│   │   │       ├── Color.kt             # Color palette
+│   │   │       └── Type.kt              # Typography
+│   │   ├── res/
+│   │   │   ├── values/
+│   │   │   │   ├── strings.xml          # App strings
+│   │   │   │   └── themes.xml           # Theme resources
+│   │   │   └── xml/
+│   │   │       ├── backup_rules.xml
+│   │   │       └── data_extraction_rules.xml
+│   │   └── AndroidManifest.xml
+│   └── ...
+├── build.gradle                         # App-level build configuration
+└── proguard-rules.pro
 ```
 
-## Built With
+## Build Instructions
 
-- [Android Studio](https://developer.android.com/studio) - The official IDE for Android
-- [Kotlin/Java](https://kotlinlang.org/) - Programming language
+### Prerequisites
+- Android Studio (latest version)
+- Android SDK 33+
+- Kotlin 1.7.20+
 
-## Contributing
+### Building from Android Studio
+1. Open the project in Android Studio
+2. Sync Gradle files
+3. Run the app on an emulator or physical device (Android 5.0+)
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### Building from Command Line
+```bash
+./gradlew assembleDebug      # Build debug APK
+./gradlew installDebug       # Install on connected device
+./gradlew build              # Build all variants
+```
 
-## License
+## Game Controls
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- **Up**: Swipe up or use up arrow
+- **Down**: Swipe down or use down arrow  
+- **Left**: Swipe left or use left arrow
+- **Right**: Swipe right or use right arrow
+- **New Game**: Tap the "New Game" button to restart
 
-## Contact
+## Technical Details
 
-Your Name - [@your_twitter](https://twitter.com/your_twitter)
+- **Language**: Kotlin
+- **UI Framework**: Jetpack Compose
+- **Minimum SDK**: 21
+- **Target SDK**: 33
+- **Compilable SDK**: 33
 
-Project Link: [https://github.com/kartikpandey596kartik1-create/app-development](https://github.com/kartikpandey596kartik1-create/app-development)
+## Dependencies
+
+- androidx.core:core-ktx
+- androidx.lifecycle:lifecycle-runtime-ktx
+- androidx.activity:activity-compose
+- androidx.compose.ui:ui
+- androidx.compose.material3:material3
+
+## Game Colors
+
+The game uses a sophisticated color scheme:
+- **Empty tiles**: Light gray
+- **2**: Light background with dark text
+- **4**: Slightly darker background
+- **8-64**: Orange and red shades
+- **128-512**: Yellow shades
+- **1024**: Red shade
+- **2048**: Golden yellow (winning tile)
+- **4096+**: Dark gray with light text
+
+## Author Notes
+
+This is a modern Android implementation of the classic 2048 game, featuring:
+- Responsive gesture-based controls
+- Smooth tile animations (structure in place for expansion)
+- Clean, maintainable code architecture
+- Material Design 3 compliance
+
+Enjoy the game!
