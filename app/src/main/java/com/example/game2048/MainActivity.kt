@@ -20,8 +20,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.stable.Immutable
 import com.example.game2048.ui.theme.Game2048Theme
 import kotlin.math.absoluteValue
+
+@Immutable
+data class TileColors(val background: Color, val text: Color)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,115 +62,26 @@ fun GameScreen() {
         verticalArrangement = Arrangement.Top
     ) {
         // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "2048",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF776E65)
-            )
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "Score",
-                    fontSize = 12.sp,
-                    color = Color(0xFFBDAC9F)
-                )
-                Text(
-                    text = gameState.score.toString(),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier
-                        .background(Color(0xFFBBADA0))
-                        .padding(8.dp)
-                )
-            }
-        }
+        GameHeader(score = gameState.score)
 
         // Game Board
-        Box(
-            modifier = Modifier
-                .size(300.dp)
-                .background(Color(0xFFBBADA0))
-                .padding(8.dp)
-                .pointerInput(Unit) {
-                    detectDragGestures { change, dragAmount ->
-                        change.consume()
-                        val (dx, dy) = dragAmount
-                        val threshold = 50
-                        when {
-                            dx.absoluteValue > dy.absoluteValue -> {
-                                if (dx > threshold) {
-                                    game.moveRight()
-                                } else if (dx < -threshold) {
-                                    game.moveLeft()
-                                }
-                            }
-                            dy.absoluteValue > dx.absoluteValue -> {
-                                if (dy > threshold) {
-                                    game.moveDown()
-                                } else if (dy < -threshold) {
-                                    game.moveUp()
-                                }
-                            }
-                        }
-                        gameState = game.getGameState()
-                    }
+        GameBoard(
+            board = gameState.board,
+            onMove = { direction ->
+                when (direction) {
+                    Direction.UP -> game.moveUp()
+                    Direction.DOWN -> game.moveDown()
+                    Direction.LEFT -> game.moveLeft()
+                    Direction.RIGHT -> game.moveRight()
                 }
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(4.dp)
-            ) {
-                for (i in 0..3) {
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                    ) {
-                        for (j in 0..3) {
-                            GameTile(
-                                value = gameState.board[i][j],
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                                    .padding(4.dp)
-                            )
-                        }
-                    }
-                }
+                gameState = game.getGameState()
             }
-        }
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // Game Status
-        if (gameState.won && !gameState.gameOver) {
-            Text(
-                text = "You Win! Keep Playing",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF776E65),
-                textAlign = TextAlign.Center
-            )
-        }
-
-        if (gameState.gameOver) {
-            Text(
-                text = "Game Over!",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFEDC22E),
-                textAlign = TextAlign.Center
-            )
-        }
+        GameStatus(won = gameState.won && !gameState.gameOver, gameOver = gameState.gameOver)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -195,13 +110,116 @@ fun GameScreen() {
     }
 }
 
+enum class Direction {
+    UP, DOWN, LEFT, RIGHT
+}
+
 @Composable
-fun GameTile(value: Int, modifier: Modifier = Modifier) {
-    val (backgroundColor, textColor) = getTileColors(value)
+fun GameHeader(score: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "2048",
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF776E65)
+        )
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = "Score",
+                fontSize = 12.sp,
+                color = Color(0xFFBDAC9F)
+            )
+            Text(
+                text = score.toString(),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier
+                    .background(Color(0xFFBBADA0))
+                    .padding(8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun GameBoard(
+    board: Array<IntArray>,
+    onMove: (Direction) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(300.dp)
+            .background(Color(0xFFBBADA0))
+            .padding(8.dp)
+            .pointerInput(Unit) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    val (dx, dy) = dragAmount
+                    val threshold = 50
+                    when {
+                        dx.absoluteValue > dy.absoluteValue -> {
+                            if (dx > threshold) {
+                                onMove(Direction.RIGHT)
+                            } else if (dx < -threshold) {
+                                onMove(Direction.LEFT)
+                            }
+                        }
+                        dy.absoluteValue > dx.absoluteValue -> {
+                            if (dy > threshold) {
+                                onMove(Direction.DOWN)
+                            } else if (dy < -threshold) {
+                                onMove(Direction.UP)
+                            }
+                        }
+                    }
+                }
+            }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp)
+        ) {
+            repeat(4) { i ->
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) {
+                    repeat(4) { j ->
+                        GameTile(
+                            value = board[i][j],
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .padding(4.dp),
+                            key = "$i-$j"
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun GameTile(
+    value: Int,
+    modifier: Modifier = Modifier,
+    key: String = ""
+) {
+    val colors = remember(value) { getTileColors(value) }
 
     Box(
         modifier = modifier
-            .background(backgroundColor)
+            .background(colors.background)
             .aspectRatio(1f),
         contentAlignment = Alignment.Center
     ) {
@@ -213,28 +231,52 @@ fun GameTile(value: Int, modifier: Modifier = Modifier) {
                     else -> 40.sp
                 },
                 fontWeight = FontWeight.Bold,
-                color = textColor,
+                color = colors.text,
                 textAlign = TextAlign.Center
             )
         }
     }
 }
 
-fun getTileColors(value: Int): Pair<Color, Color> {
+@Composable
+fun GameStatus(won: Boolean, gameOver: Boolean) {
+    if (won) {
+        Text(
+            text = "You Win! Keep Playing",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF776E65),
+            textAlign = TextAlign.Center
+        )
+    }
+
+    if (gameOver) {
+        Text(
+            text = "Game Over!",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFFEDC22E),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Stable
+fun getTileColors(value: Int): TileColors {
     return when (value) {
-        0 -> Pair(Color(0xFFCDC1B4), Color(0xFFCDC1B4))
-        2 -> Pair(Color(0xFFeee4da), Color(0xFF776E65))
-        4 -> Pair(Color(0xFFede0c8), Color(0xFF776E65))
-        8 -> Pair(Color(0xFFf2b179), Color(0xFFf9f6f2))
-        16 -> Pair(Color(0xFFf59563), Color(0xFFf9f6f2))
-        32 -> Pair(Color(0xFFf67c5f), Color(0xFFf9f6f2))
-        64 -> Pair(Color(0xFFf65e3b), Color(0xFFf9f6f2))
-        128 -> Pair(Color(0xFFedcf72), Color(0xFF776E65))
-        256 -> Pair(Color(0xFFedcc61), Color(0xFF776E65))
-        512 -> Pair(Color(0xFFedc850), Color(0xFF776E65))
-        1024 -> Pair(Color(0xFFec483f), Color(0xFFf9f6f2))
-        2048 -> Pair(Color(0xFFedc22e), Color(0xFF776E65))
-        else -> Pair(Color(0xFF3c3c2f), Color(0xFFF9F6F2))
+        0 -> TileColors(Color(0xFFCDC1B4), Color(0xFFCDC1B4))
+        2 -> TileColors(Color(0xFFeee4da), Color(0xFF776E65))
+        4 -> TileColors(Color(0xFFede0c8), Color(0xFF776E65))
+        8 -> TileColors(Color(0xFFf2b179), Color(0xFFf9f6f2))
+        16 -> TileColors(Color(0xFFf59563), Color(0xFFf9f6f2))
+        32 -> TileColors(Color(0xFFf67c5f), Color(0xFFf9f6f2))
+        64 -> TileColors(Color(0xFFf65e3b), Color(0xFFf9f6f2))
+        128 -> TileColors(Color(0xFFedcf72), Color(0xFF776E65))
+        256 -> TileColors(Color(0xFFedcc61), Color(0xFF776E65))
+        512 -> TileColors(Color(0xFFedc850), Color(0xFF776E65))
+        1024 -> TileColors(Color(0xFFec483f), Color(0xFFf9f6f2))
+        2048 -> TileColors(Color(0xFFedc22e), Color(0xFF776E65))
+        else -> TileColors(Color(0xFF3c3c2f), Color(0xFFF9F6F2))
     }
 }
 

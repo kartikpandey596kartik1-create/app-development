@@ -1,7 +1,9 @@
 package com.example.game2048
 
+import androidx.stable.Immutable
 import kotlin.random.Random
 
+@Immutable
 data class GameState(
     val board: Array<IntArray> = Array(4) { IntArray(4) },
     val score: Int = 0,
