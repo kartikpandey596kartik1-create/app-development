@@ -48,11 +48,18 @@ fun GameScreen() {
     val game = remember { Game2048() }
     var gameState by remember { mutableStateOf(game.getGameState()) }
     var canMove by remember { mutableStateOf(true) }
-    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         game.newGame()
         gameState = game.getGameState()
+    }
+
+    // Handle debounce timer
+    LaunchedEffect(canMove) {
+        if (!canMove) {
+            kotlinx.coroutines.delay(150)
+            canMove = true
+        }
     }
 
     Column(
@@ -79,12 +86,6 @@ fun GameScreen() {
                         Direction.RIGHT -> game.moveRight()
                     }
                     gameState = game.getGameState()
-                    
-                    // Schedule re-enabling moves
-                    coroutineScope.launch {
-                        delay(150)
-                        canMove = true
-                    }
                 }
             }
         )
