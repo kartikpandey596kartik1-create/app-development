@@ -120,20 +120,27 @@ class Game2048 {
 
     fun moveUp(): Boolean {
         val newBoard = Array(4) { IntArray(4) }
-        
+        var totalScore = 0
+        var moved = false
+
         for (j in 0..3) {
             val column = IntArray(4) { i -> gameState.board[i][j] }
             val (compactedCol, scoreAdded) = compactRow(column)
+            totalScore += scoreAdded
+            
             for (i in 0..3) {
                 newBoard[i][j] = compactedCol[i]
             }
-            gameState = gameState.copy(score = gameState.score + scoreAdded)
+            
+            if (!column.contentEquals(compactedCol)) {
+                moved = true
+            }
         }
 
-        val moved = !boardsEqual(gameState.board, newBoard)
         if (moved) {
             gameState = gameState.copy(
                 board = newBoard,
+                score = gameState.score + totalScore,
                 moves = gameState.moves + 1
             )
             addNewTile()
@@ -145,18 +152,25 @@ class Game2048 {
 
     fun moveDown(): Boolean {
         val newBoard = Array(4) { IntArray(4) }
-        
         var totalScore = 0
+        var moved = false
+
         for (j in 0..3) {
             val column = IntArray(4) { i -> gameState.board[i][j] }
-            val (compactedCol, scoreAdded) = compactRow(column.reversedArray())
+            val reversed = column.reversedArray()
+            val (compactedCol, scoreAdded) = compactRow(reversed)
             totalScore += scoreAdded
+            
+            val compactedReversed = compactedCol.reversedArray()
             for (i in 0..3) {
-                newBoard[i][j] = compactedCol[3 - i]
+                newBoard[i][j] = compactedReversed[i]
+            }
+            
+            if (!column.contentEquals(compactedReversed)) {
+                moved = true
             }
         }
 
-        val moved = !boardsEqual(gameState.board, newBoard)
         if (moved) {
             gameState = gameState.copy(
                 board = newBoard,
