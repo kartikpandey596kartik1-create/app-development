@@ -1189,8 +1189,8 @@ fun StatsScreen(onBack: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                StatBox(icon = "🎮", label = "Total Games", value = stats.totalGames.toString(), Color(0xFFEC483F), 1f)
-                StatBox(icon = "🏆", label = "Total Wins", value = stats.totalWins.toString(), Color(0xFFEDC22E), 1f)
+                StatBox(icon = "🎮", label = "Total Games", value = stats.totalGames.toString(), Color(0xFFEC483F))
+                StatBox(icon = "🏆", label = "Total Wins", value = stats.totalWins.toString(), Color(0xFFEDC22E))
             }
             
             // Row 2
@@ -1198,8 +1198,8 @@ fun StatsScreen(onBack: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                StatBox(icon = "⭐", label = "Best Score", value = stats.bestScore.toString(), Color(0xFFF2B179), 1f)
-                StatBox(icon = "⚡", label = "Best Time", value = "${stats.bestTime / 1000}s", Color(0xFF776E65), 1f)
+                StatBox(icon = "⭐", label = "Best Score", value = stats.bestScore.toString(), Color(0xFFF2B179))
+                StatBox(icon = "⚡", label = "Best Time", value = "${stats.bestTime / 1000}s", Color(0xFF776E65))
             }
             
             // Win rate
@@ -1229,10 +1229,10 @@ fun StatsScreen(onBack: () -> Unit) {
 }
 
 @Composable
-fun StatBox(icon: String, label: String, value: String, bgColor: Color, weight: Float) {
+fun StatBox(icon: String, label: String, value: String, bgColor: Color) {
     Box(
         modifier = Modifier
-            .weight(weight)
+            .fillMaxWidth()
             .background(bgColor, shape = RoundedCornerShape(12.dp))
             .padding(16.dp),
         contentAlignment = Alignment.Center
