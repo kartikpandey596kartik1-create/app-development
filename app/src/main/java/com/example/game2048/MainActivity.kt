@@ -152,29 +152,41 @@ fun GameBoard(
     board: Array<IntArray>,
     onMove: (Direction) -> Unit
 ) {
+    var lastProcessedGestureId by remember { mutableStateOf<Pair<Float, Float>?>(null) }
+    
     Box(
         modifier = Modifier
             .size(300.dp)
             .background(Color(0xFFBBADA0))
             .padding(8.dp)
             .pointerInput(Unit) {
-                detectDragGestures { change, dragAmount ->
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        lastProcessedGestureId = null
+                    },
+                    onDragEnd = {
+                        lastProcessedGestureId = null
+                    }
+                ) { change, dragAmount ->
                     change.consume()
                     val (dx, dy) = dragAmount
-                    val threshold = 50
-                    when {
-                        dx.absoluteValue > dy.absoluteValue -> {
-                            if (dx > threshold) {
-                                onMove(Direction.RIGHT)
-                            } else if (dx < -threshold) {
-                                onMove(Direction.LEFT)
+                    val threshold = 100f
+                    
+                    // Create unique ID for this swipe to prevent double-processing
+                    val gestureId = Pair(dx, dy)
+                    
+                    // Only process if we haven't processed this exact swipe yet
+                    if (gestureId != lastProcessedGestureId) {
+                        when {
+                            dx.absoluteValue > dy.absoluteValue && dx.absoluteValue > threshold -> {
+                                lastProcessedGestureId = gestureId
+                                if (dx > 0) onMove(Direction.RIGHT)
+                                else onMove(Direction.LEFT)
                             }
-                        }
-                        dy.absoluteValue > dx.absoluteValue -> {
-                            if (dy > threshold) {
-                                onMove(Direction.DOWN)
-                            } else if (dy < -threshold) {
-                                onMove(Direction.UP)
+                            dy.absoluteValue > dx.absoluteValue && dy.absoluteValue > threshold -> {
+                                lastProcessedGestureId = gestureId
+                                if (dy > 0) onMove(Direction.DOWN)
+                                else onMove(Direction.UP)
                             }
                         }
                     }
