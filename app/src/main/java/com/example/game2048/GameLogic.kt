@@ -1,6 +1,6 @@
 package com.example.game2048
 
-import androidx.stable.Immutable
+import androidx.compose.runtime.Immutable
 import kotlin.random.Random
 
 @Immutable
