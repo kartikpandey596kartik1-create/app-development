@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.game2048.ui.theme.Game2048Theme
 import kotlin.math.absoluteValue
+import kotlinx.coroutines.delay
 
 @Immutable
 data class TileColors(val background: Color, val text: Color)
@@ -46,6 +47,8 @@ class MainActivity : ComponentActivity() {
 fun GameScreen() {
     val game = remember { Game2048() }
     var gameState by remember { mutableStateOf(game.getGameState()) }
+    var canMove by remember { mutableStateOf(true) }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         game.newGame()
@@ -67,13 +70,22 @@ fun GameScreen() {
         GameBoard(
             board = gameState.board,
             onMove = { direction ->
-                when (direction) {
-                    Direction.UP -> game.moveUp()
-                    Direction.DOWN -> game.moveDown()
-                    Direction.LEFT -> game.moveLeft()
-                    Direction.RIGHT -> game.moveRight()
+                if (canMove && !gameState.gameOver) {
+                    canMove = false
+                    when (direction) {
+                        Direction.UP -> game.moveUp()
+                        Direction.DOWN -> game.moveDown()
+                        Direction.LEFT -> game.moveLeft()
+                        Direction.RIGHT -> game.moveRight()
+                    }
+                    gameState = game.getGameState()
+                    
+                    // Schedule re-enabling moves
+                    coroutineScope.launch {
+                        delay(150)
+                        canMove = true
+                    }
                 }
-                gameState = game.getGameState()
             }
         )
 
@@ -152,7 +164,7 @@ fun GameBoard(
     board: Array<IntArray>,
     onMove: (Direction) -> Unit
 ) {
-    var lastProcessedGestureId by remember { mutableStateOf<Pair<Float, Float>?>(null) }
+    var moveTriggered by remember { mutableStateOf(false) }
     
     Box(
         modifier = Modifier
@@ -161,30 +173,27 @@ fun GameBoard(
             .padding(8.dp)
             .pointerInput(Unit) {
                 detectDragGestures(
-                    onDragStart = { offset ->
-                        lastProcessedGestureId = null
+                    onDragStart = {
+                        moveTriggered = false
                     },
                     onDragEnd = {
-                        lastProcessedGestureId = null
+                        moveTriggered = false
                     }
                 ) { change, dragAmount ->
                     change.consume()
                     val (dx, dy) = dragAmount
                     val threshold = 100f
                     
-                    // Create unique ID for this swipe to prevent double-processing
-                    val gestureId = Pair(dx, dy)
-                    
-                    // Only process if we haven't processed this exact swipe yet
-                    if (gestureId != lastProcessedGestureId) {
+                    // Only process once per gesture, when threshold is first exceeded
+                    if (!moveTriggered) {
                         when {
-                            dx.absoluteValue > dy.absoluteValue && dx.absoluteValue > threshold -> {
-                                lastProcessedGestureId = gestureId
+                            dx.absoluteValue > threshold && dx.absoluteValue > dy.absoluteValue -> {
+                                moveTriggered = true
                                 if (dx > 0) onMove(Direction.RIGHT)
                                 else onMove(Direction.LEFT)
                             }
-                            dy.absoluteValue > dx.absoluteValue && dy.absoluteValue > threshold -> {
-                                lastProcessedGestureId = gestureId
+                            dy.absoluteValue > threshold && dy.absoluteValue > dx.absoluteValue -> {
+                                moveTriggered = true
                                 if (dy > 0) onMove(Direction.DOWN)
                                 else onMove(Direction.UP)
                             }
