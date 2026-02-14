@@ -20,12 +20,12 @@ data class GameState(
         other as GameState
 
         if (!board.contentDeepEquals(other.board)) return false
-        if (gameState.score != other.score) return false
-        if (gameState.gameOver != other.gameOver) return false
-        if (gameState.won != other.won) return false
-        if (gameState.moves != other.moves) return false
-        if (gameState.boardSize != other.boardSize) return false
-        if (gameState.targetValue != other.targetValue) return false
+        if (score != other.score) return false
+        if (gameOver != other.gameOver) return false
+        if (won != other.won) return false
+        if (moves != other.moves) return false
+        if (boardSize != other.boardSize) return false
+        if (targetValue != other.targetValue) return false
 
         return true
     }
