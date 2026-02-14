@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -19,9 +20,11 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,6 +36,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
 import coil.compose.AsyncImage
 import com.example.game2048.ui.theme.Game2048Theme
 import kotlin.math.absoluteValue
@@ -113,11 +117,8 @@ fun AppNavigation() {
 
 @Composable
 fun SplashScreen(onNavigate: () -> Unit) {
-    var isLoading by remember { mutableStateOf(true) }
-
     LaunchedEffect(Unit) {
-        delay(2000)
-        isLoading = false
+        delay(3000)
         onNavigate()
     }
 
@@ -127,31 +128,38 @@ fun SplashScreen(onNavigate: () -> Unit) {
             .background(Color(0xFFBBADA0)),
         contentAlignment = Alignment.Center
     ) {
+        Image(
+            painter = androidx.compose.ui.res.painterResource(id = R.drawable.splash_bg),
+            contentDescription = "Splash Background",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+        
+        // Optional: Add a semi-transparent overlay if needed
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.2f))
+        )
+        
+        // Loading indicator
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxSize()
+            verticalArrangement = Arrangement.Bottom,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp)
         ) {
-            AsyncImage(
-                model = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Merge_square_numbers.svg/1024px-Merge_square_numbers.svg.png",
-                contentDescription = "2048 Logo",
-                modifier = Modifier
-                    .size(200.dp)
-                    .padding(16.dp),
-                contentScale = ContentScale.Fit
-            )
-            Spacer(modifier = Modifier.height(32.dp))
-            Text(
-                text = "2048",
-                fontSize = 48.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF776E65)
+            androidx.compose.material3.CircularProgressIndicator(
+                color = Color.White,
+                modifier = Modifier.size(50.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "Loading...",
-                fontSize = 18.sp,
-                color = Color(0xFF9F8A78)
+                fontSize = 16.sp,
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold
             )
         }
     }
